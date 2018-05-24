@@ -14,6 +14,12 @@
 
 @end
 
+@interface RCCTabBarController ()
+
+@property (nonatomic, strong) NSSet *modalTabIndices;
+
+@end
+
 @implementation RCCTabBarController
 
 
@@ -26,15 +32,25 @@
     dispatch_async(queue, ^{
         [[[RCCManager sharedInstance].getBridge uiManager] configureNextLayoutAnimation:nil withCallback:^(NSArray* arr){} errorCallback:^(NSArray* arr){}];
     });
+
+    NSUInteger selectedIndex = [tabBarController.viewControllers indexOfObject:viewController];
     
-    if (tabBarController.selectedIndex != [tabBarController.viewControllers indexOfObject:viewController]) {
+    if (tabBarController.selectedIndex != selectedIndex) {
         NSDictionary *body = @{
-                               @"selectedTabIndex": @([tabBarController.viewControllers indexOfObject:viewController]),
+                               @"selectedTabIndex": @(selectedIndex),
                                @"unselectedTabIndex": @(tabBarController.selectedIndex)
                                };
-        [RCCTabBarController sendScreenTabChangedEvent:viewController body:body];
+
+        if ([self.modalTabIndices containsObject:@(selectedIndex)]) {
+            [RCCTabBarController sendScreenTabModalEvent:viewController body:body];
+            return NO;
+        }
+        else {
+            [RCCTabBarController sendScreenTabChangedEvent:viewController body:body];
+
+            [[[RCCManager sharedInstance] getBridge].eventDispatcher sendAppEventWithName:@"bottomTabSelected" body:body];
+        }
         
-        [[[RCCManager sharedInstance] getBridge].eventDispatcher sendAppEventWithName:@"bottomTabSelected" body:body];
         if ([viewController isKindOfClass:[UINavigationController class]]) {
             UINavigationController *navigationController = (UINavigationController*)viewController;
             UIViewController *topViewController = navigationController.topViewController;
@@ -126,6 +142,7 @@
     }
     
     NSMutableArray *viewControllers = [NSMutableArray array];
+    NSMutableSet *modalTabs = [NSMutableSet new];
     
     // go over all the tab bar items
     for (NSDictionary *tabItemLayout in children) {
@@ -143,6 +160,13 @@
         
         // create the tab icon and title
         NSString *title = tabItemLayout[@"props"][@"title"];
+        id isModal = tabItemLayout[@"props"][@"modal"];
+        if (isModal && isModal != (id)[NSNull null]) {
+            BOOL isModalBool = [RCTConvert BOOL:isModal];
+            if (isModalBool) {
+                [modalTabs addObject:@([viewControllers count])];
+            }
+        }
         UIImage *iconImage = nil;
         id icon = tabItemLayout[@"props"][@"icon"];
         if (icon) {
@@ -203,6 +227,7 @@
     
     // replace the tabs
     self.viewControllers = viewControllers;
+    self.modalTabIndices = [modalTabs copy];
     
     NSNumber *initialTab = tabsStyle[@"initialTabIndex"];
     if (initialTab) {
@@ -345,6 +370,10 @@
 
 +(void)sendScreenTabPressedEvent:(UIViewController*)viewController body:(NSDictionary*)body{
     [RCCTabBarController sendTabEvent:@"bottomTabReselected" controller:viewController body:body];
+}
+
++(void)sendScreenTabModalEvent:(UIViewController*)viewController body:(NSDictionary*)body{
+    [RCCTabBarController sendTabEvent:@"modalTabSelected" controller:viewController body:body];
 }
 
 +(void)sendTabEvent:(NSString *)event controller:(UIViewController*)viewController body:(NSDictionary*)body{
