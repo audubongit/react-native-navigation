@@ -1,6 +1,6 @@
 /*eslint-disable*/
-import React, {Component} from 'react';
-import ReactNative, {AppRegistry, NativeModules, processColor} from 'react-native';
+import React, { Component } from 'react';
+import ReactNative, { AppRegistry, NativeModules, processColor } from 'react-native';
 import _ from 'lodash';
 
 import Navigation from './../Navigation';
@@ -9,7 +9,7 @@ const resolveAssetSource = require('react-native/Libraries/Image/resolveAssetSou
 
 import * as newPlatformSpecific from './../platformSpecific';
 
-function startSingleScreenApp(params) {
+async function startSingleScreenApp(params) {
   const screen = params.screen;
   if (!screen.screen) {
     console.error('startSingleScreenApp(params): screen must include a screen property');
@@ -35,7 +35,7 @@ function startSingleScreenApp(params) {
   params.overrideBackPress = screen.overrideBackPress;
   params.animateShow = convertAnimationType(params.animationType);
 
-  newPlatformSpecific.startApp(params);
+  return await newPlatformSpecific.startApp(params);
 }
 
 function getOrientation(params) {
@@ -240,7 +240,7 @@ function adaptNavigationParams(screen) {
   return screen;
 }
 
-function startTabBasedApp(params) {
+async function startTabBasedApp(params) {
   if (!params.tabs) {
     console.error('startTabBasedApp(params): params.tabs is required');
     return;
@@ -250,7 +250,7 @@ function startTabBasedApp(params) {
 
   params.tabs = _.cloneDeep(params.tabs);
 
-  params.tabs.forEach(function(tab, idx) {
+  params.tabs.forEach(function (tab, idx) {
     addNavigatorParams(tab, null, idx);
     addNavigatorButtons(tab, params.drawer);
     addNavigationStyleParams(tab);
@@ -277,7 +277,7 @@ function startTabBasedApp(params) {
   params.sideMenu = convertDrawerParamsToSideMenuParams(params.drawer);
   params.animateShow = convertAnimationType(params.animationType);
 
-  newPlatformSpecific.startApp(params);
+  return await newPlatformSpecific.startApp(params);
 }
 
 function addTabIcon(tab) {
@@ -300,7 +300,7 @@ function convertAnimationType(animationType) {
 function navigatorSetButtons(navigator, navigatorEventID, _params) {
   const params = _.cloneDeep(_params);
   if (params.rightButtons) {
-    params.rightButtons.forEach(function(button) {
+    params.rightButtons.forEach(function (button) {
       button.enabled = !button.disabled;
       if (button.icon) {
         const icon = resolveAssetSource(button.icon);
@@ -494,7 +494,7 @@ function addNavigatorButtons(screen, sideMenuParams) {
   // Get image uri from image id
   const rightButtons = getRightButtons(screen);
   if (rightButtons) {
-    rightButtons.forEach(function(button) {
+    rightButtons.forEach(function (button) {
       button.enabled = !button.disabled;
       if (button.icon) {
         const icon = resolveAssetSource(button.icon);
@@ -536,7 +536,7 @@ function getFab(screen) {
   if (fab === null || fab === undefined) {
     return;
   }
-  if (Object.keys(fab).length === 0 ) {
+  if (Object.keys(fab).length === 0) {
     return {};
   }
 
@@ -654,8 +654,8 @@ function dismissSnackbar() {
 function showContextualMenu(navigator, params) {
   const contextualMenu = {
     buttons: [],
-    backButton: {id: 'back'},
-    navigationParams: {navigatorEventID: navigator.navigatorEventID}
+    backButton: { id: 'back' },
+    navigationParams: { navigatorEventID: navigator.navigatorEventID }
   };
 
   params.rightButtons.forEach((button, index) => {

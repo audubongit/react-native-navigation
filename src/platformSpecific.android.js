@@ -1,13 +1,13 @@
-import React, {Component} from 'react';
-import {AppRegistry, NativeModules} from 'react-native';
+import React, { Component } from 'react';
+import { AppRegistry, NativeModules } from 'react-native';
 import _ from 'lodash';
 import PropRegistry from './PropRegistry';
 
 const NativeReactModule = NativeModules.NavigationReactModule;
 
-function startApp(activityParams) {
+async function startApp(activityParams) {
   savePassProps(activityParams);
-  NativeReactModule.startApp(activityParams);
+  return await NativeReactModule.startApp(activityParams);
 }
 
 function push(screenParams) {
